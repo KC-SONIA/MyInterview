@@ -1,6 +1,7 @@
 import com.google.gson.*;
 import java.io.*;
 import java.nio.file.*;
+import java.math.*;
 import java.util.*;
 
 public class Equation {
@@ -20,7 +21,7 @@ public class Equation {
 
         // Step 3: Extract roots
         List<Integer> xs = new ArrayList<>();
-        List<Integer> ys = new ArrayList<>();
+        List<BigInteger> ys = new ArrayList<>();
 
         for (String rootKey : jsonObject.keySet()) {
             if (rootKey.equals("keys")) continue;
@@ -31,7 +32,7 @@ public class Equation {
             int base = Integer.parseInt(rootObj.get("base").getAsString());
             String value = rootObj.get("value").getAsString();
 
-            int y = Integer.parseInt(value, base); // decode base-n
+            BigInteger y = new BigInteger(value, base); // Safe for any size
             xs.add(x);
             ys.add(y);
 
@@ -40,25 +41,28 @@ public class Equation {
 
         // Step 4: Pick only k roots (first k)
         List<Integer> xsSelected = xs.subList(0, k);
-        List<Integer> ysSelected = ys.subList(0, k);
+        List<BigInteger> ysSelected = ys.subList(0, k);
 
         // Step 5: Lagrange interpolation at x=0 (constant term)
-        double c = lagrangeAtZero(xsSelected, ysSelected);
-        System.out.println("\nConstant term (c) = " + c);
+        BigDecimal c = lagrangeAtZero(xsSelected, ysSelected);
+        System.out.println("\nConstant term (c) = " + c.toPlainString());
     }
 
-    static double lagrangeAtZero(List<Integer> xs, List<Integer> ys) {
+    static BigDecimal lagrangeAtZero(List<Integer> xs, List<BigInteger> ys) {
         int n = xs.size();
-        double result = 0.0;
+        BigDecimal result = BigDecimal.ZERO;
+        MathContext mc = new MathContext(50); // high precision
 
         for (int i = 0; i < n; i++) {
-            double term = ys.get(i);
+            BigDecimal term = new BigDecimal(ys.get(i));
             for (int j = 0; j < n; j++) {
                 if (i != j) {
-                    term *= (0 - xs.get(j)) / (double)(xs.get(i) - xs.get(j));
+                    BigDecimal numerator = BigDecimal.valueOf(-xs.get(j));
+                    BigDecimal denominator = BigDecimal.valueOf(xs.get(i) - xs.get(j));
+                    term = term.multiply(numerator.divide(denominator, mc), mc);
                 }
             }
-            result += term;
+            result = result.add(term, mc);
         }
         return result;
     }
