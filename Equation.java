@@ -45,6 +45,10 @@ public class Equation {
 
         // Step 5: Lagrange interpolation at x=0 (constant term)
         BigDecimal c = lagrangeAtZero(xsSelected, ysSelected);
+
+        // Force integer scale to remove trailing zeros
+        c = c.setScale(0, RoundingMode.UNNECESSARY);
+
         System.out.println("\nConstant term (c) = " + c.toPlainString());
     }
 
@@ -67,3 +71,4 @@ public class Equation {
         return result;
     }
 }
+
